@@ -1,22 +1,19 @@
 mod args;
 use args::Args;
 use image::{io::Reader, DynamicImage, ImageFormat,imageops::FilterType::Triangle, GenericImageView, ImageError};
-use std::{ io::BufReader, fs::File, env::home_dir};
 use std::convert::TryInto;
  
 #[derive(Debug)]
 enum ImageDataErrors {
     DifferentImageFormats,
     BufferTooSmall,
-    UnableToReadImageFromPath(std::io::Error),
-    UnableToDecodeImage(ImageError)
-    UnableTo
-}
-
-
-enum Option {
+    UnableToReadImageFromPath(String),
+    UnableToFormatImage(String),
+    UnableToDecodeImage(ImageError),
+    UnableToSaveImage(ImageError)
 
 }
+
 
 struct FloatingImage {
     width : u32, 
@@ -61,15 +58,17 @@ fn main() -> Result<(), ImageDataErrors> {
     output.set_data(combined_data)?;
 
     if let Err(e) = image::save_buffer_with_format(output.name, &output.data, output.width, output.height, image::ColorType::Rgba8,
-        image_format_1).unwrap() {
-            Err(ImageDataErrors::Una)
+        image_format_1) {
+            Err(ImageDataErrors::UnableToSaveImage(e))
         }
-    Ok(())
+    else {
+     Ok(())
+    }
 }  
 
 
-fn find_image_from_path(path: String) -> Result<(DynamicImage, DynamicImage), ImageDataErrors>{
-    match Reader::open(path) {
+fn find_image_from_path(path: String) -> Result<(DynamicImage, ImageFormat), ImageDataErrors>{
+    match Reader::open(&path) {
         Ok(image_reader) => {
             if let Some(image_format) = image_reader.format() {
                 match image_reader.decode() {
@@ -77,10 +76,10 @@ fn find_image_from_path(path: String) -> Result<(DynamicImage, DynamicImage), Im
                     Err(e) => Err(ImageDataErrors::UnableToDecodeImage(e))
                 }
             } else {
-                return Err(ImageDataErrors::UnableToReadImageFromPath(path))
+                return Err(ImageDataErrors::UnableToReadImageFromPath(path));
             }
         }, 
-        Err(e) => Err(ImageDataErrors::UnableToReadImageFromPath(e))
+        Err(e) => Err(ImageDataErrors::UnableToFormatImage(e.to_string()))
     }
 
 }
